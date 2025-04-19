@@ -71,7 +71,7 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/': (context) => HomeScreen(),
         '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignUpScreen(),
+        '/signup': (context) => SignupScreen(),
         '/list': (context) => CardListScreen(),
         '/dashboard': (context) => MainDashboardScreen(),
         '/profile': (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
