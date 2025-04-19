@@ -5,10 +5,12 @@ import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/card_list_screen.dart';
-import 'screens/dashboard_screen.dart';      // contains MainDashboardScreen
+import 'screens/dashboard_screen.dart'; // contains MainDashboardScreen
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/applock_screen.dart';       // contains AppLockScreen
+import 'screens/applock_screen.dart'; // contains AppLockScreen
+import 'screens/focus_screen.dart';
+import 'screens/schedule_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -71,12 +73,16 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/': (context) => HomeScreen(),
         '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignUpScreen(),
+        '/signup': (context) => SignupScreen(),
         '/list': (context) => CardListScreen(),
         '/dashboard': (context) => MainDashboardScreen(),
-        '/profile': (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
-        '/settings': (context) => SettingsScreen(onThemeChanged: _handleThemeChange),
+        '/profile':
+            (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
+        '/settings':
+            (context) => SettingsScreen(onThemeChanged: _handleThemeChange),
         '/applock': (context) => AppLockScreen(), // ✅ App Lock added
+        '/focus': (context) => FocusScreen(),
+        '/schedule': (context) => ScheduleScreen(),
       },
     );
   }
