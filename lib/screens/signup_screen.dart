@@ -26,13 +26,13 @@ const TextStyle _kLinkBoldStyle = TextStyle(
   color: Colors.black,
 );
 
-class SignUpScreen extends StatefulWidget {
+class SignupScreen extends StatefulWidget {
   static const routeName = '/signup';
   @override
-  _SignUpScreenState createState() => _SignUpScreenState();
+  _SignupScreenState createState() => _SignupScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _email = TextEditingController();
