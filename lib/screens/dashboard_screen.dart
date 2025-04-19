@@ -86,7 +86,42 @@ class MainDashboardScreen extends StatelessWidget {
                   Navigator.pushNamed(context, '/profile'); // Navigate to profile
                 },
               ),
-              // --- LOG OUT BUTTON ADDED ---
+
+              // --- NEW DRAWER ITEMS ADDED ---
+              ListTile(
+                leading: Icon(Icons.list_alt_outlined, color: drawerItemColor), // Icon for Today's Tasks
+                title: Text('Today\'s Tasks', style: TextStyle(color: drawerItemColor)),
+                onTap: () {
+                  Navigator.pop(context); // Close drawer first
+                  Navigator.pushNamed(context, '/todays_tasks'); // Navigate to today's tasks
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.bar_chart_rounded, color: drawerItemColor), // Icon for Daily Summary
+                title: Text('Daily Summary', style: TextStyle(color: drawerItemColor)),
+                onTap: () {
+                  Navigator.pop(context); // Close drawer first
+                  Navigator.pushNamed(context, '/daily_summary'); // Navigate to daily summary
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.bolt, color: drawerItemColor),
+                title: Text("Focus Mode",style: TextStyle(color: drawerItemColor)),
+                onTap: () => Navigator.pushNamed(context, '/focus'),
+              ),
+              ListTile(
+                leading: Icon(Icons.calendar_today, color: drawerItemColor),
+                title: Text("Schedule",style: TextStyle(color: drawerItemColor)),
+                onTap: () => Navigator.pushNamed(context, '/schedule'),
+              ),
+              ListTile(
+                leading: Icon(Icons.analytics_outlined, color: drawerItemColor),
+                title: Text("Data Analytics",style: TextStyle(color: drawerItemColor)),
+                onTap: () => Navigator.pushNamed(context, '/data_analytics'),
+              ),
+              // --- END NEW DRAWER ITEMS ---
+
+              // --- LOG OUT BUTTON ---
               Divider(color: drawerItemColor.withOpacity(0.5)), // Optional divider using the adaptive color
               ListTile(
                 leading: Icon(Icons.logout, color: drawerItemColor), // Logout icon using adaptive color
@@ -105,95 +140,89 @@ class MainDashboardScreen extends StatelessWidget {
         ),
       ),
       // --- DRAWER UPDATES END ---
+
+      // --- BODY SECTION (UNCHANGED from your provided code) ---
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        // Use the general text color for the title
         title: Text('Welcome Back', style: AppTextStyles.header.copyWith(color: generalTextColor)),
-        iconTheme: IconThemeData(color: generalTextColor), // Ensure app bar icons (like drawer) match text color
+        iconTheme: IconThemeData(color: generalTextColor),
         actions: [
           IconButton(
-            // Use the general text color for the profile icon
             icon: Icon(Icons.account_circle, size: 28, color: generalTextColor),
             onPressed: () => Navigator.pushNamed(context, '/profile'),
           )
         ],
       ),
       body: Padding(
-        // Use AppDimens if defined, otherwise fallback
-        padding: AppDimens.padding, // Assuming AppDimens.padding exists
+        padding: AppDimens.padding,
         child: ListView(
           children: [
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {}, // Original onPressed
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.greenAccent, // Keep button color as is
-                foregroundColor: Colors.black,      // Keep button text color as is
+                backgroundColor: Colors.greenAccent,
+                foregroundColor: Colors.black,
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
               child: Text("Focus Now"),
             ),
             SizedBox(height: 16),
-            // Use general text color for headers
-            Text("Daily Schedule", style: AppTextStyles.header.copyWith(color: generalTextColor)), // Assuming AppTextStyles.header exists
-            Divider(color: Colors.green), // Keep divider green
+            Text("Daily Schedule", style: AppTextStyles.header.copyWith(color: generalTextColor)),
+            Divider(color: Colors.green),
             ...schedule.map((item) => ListTile(
-              // Use general text color for time
               leading: Text(item['time'], style: TextStyle(fontWeight: FontWeight.bold, color: generalTextColor)),
               title: Row(
                 children: [
-                  // Ensure avatar text contrasts with avatar background
-                  ...item['avatars'].map<Widget>((a) => CircleAvatar(radius: 12, child: Text(a, style: TextStyle(color: Colors.black)))).toList(), // Assuming light avatar background
+                  ...item['avatars'].map<Widget>((a) => CircleAvatar(radius: 12, child: Text(a, style: TextStyle(color: Colors.black)))).toList(),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.greenAccent, // Keep task background color
+                      color: Colors.greenAccent,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(item['task'], style: TextStyle(color: Colors.black)), // Keep task text color
+                    child: Text(item['task'], style: TextStyle(color: Colors.black)),
                   )
                 ],
               ),
+              // No onTap added here, keeping original
             )),
             SizedBox(height: 16),
-            // Use general text color for headers
-            Text("Today's Tasks", style: AppTextStyles.header.copyWith(color: generalTextColor)), // Assuming AppTextStyles.header exists
-            Divider(color: Colors.green), // Keep divider green
+            Text("Today's Tasks", style: AppTextStyles.header.copyWith(color: generalTextColor)),
+            Divider(color: Colors.green),
             ...tasks.asMap().entries.map((entry) {
               int index = entry.key + 1;
               var task = entry.value;
               return ListTile(
-                // Use general text color for index
                 leading: Text("$index", style: TextStyle(fontWeight: FontWeight.bold, color: generalTextColor)),
                 title: Row(
                   children: [
-                    // Ensure avatar text contrasts with avatar background
-                    ...task['avatars'].map<Widget>((a) => CircleAvatar(radius: 12, child: Text(a, style: TextStyle(color: Colors.black)))).toList(), // Assuming light avatar background
+                    ...task['avatars'].map<Widget>((a) => CircleAvatar(radius: 12, child: Text(a, style: TextStyle(color: Colors.black)))).toList(),
                     SizedBox(width: 8),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.greenAccent, // Keep task background color
+                        color: Colors.greenAccent,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(task['title'], style: TextStyle(color: Colors.black)), // Keep task text color
+                      child: Text(task['title'], style: TextStyle(color: Colors.black)),
                     )
                   ],
                 ),
-                // Use general text color (with opacity) for subtitle
                 subtitle: Text("Notes: ${task['note']}", style: TextStyle(color: generalTextColor.withOpacity(0.7))),
+                // No onTap added here, keeping original
               );
             }).toList(),
-            ListTile(
-              // Keep add task button green (using greenAccent like your header now)
+            ListTile( // Keep original Add New Task ListTile
               leading: Icon(Icons.add_circle, color: Colors.greenAccent),
               title: Text("Add New Task", style: TextStyle(color: Colors.greenAccent)),
-              onTap: () {},
+              onTap: () {}, // Original onTap
             ),
           ],
         ),
       ),
+      // --- END BODY SECTION ---
     );
   }
 }

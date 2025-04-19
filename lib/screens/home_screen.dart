@@ -58,23 +58,6 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () => Navigator.pushNamed(context, '/signup'),
                 child: Text("Sign Up"),
               ),
-              SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () => Navigator.pushNamed(context, '/list'),
-                child: Text("Card List"),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: Icon(Icons.bolt),
-                label: Text("Focus Mode"),
-                onPressed: () => Navigator.pushNamed(context, '/focus'),
-              ),
-              SizedBox(height: 8),
-              ElevatedButton.icon(
-                icon: Icon(Icons.calendar_today),
-                label: Text("Schedule"),
-                onPressed: () => Navigator.pushNamed(context, '/schedule'),
-              ),
             ],
           ),
         ),

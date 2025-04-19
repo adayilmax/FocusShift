@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/card_list_screen.dart';
 import 'screens/dashboard_screen.dart'; // contains MainDashboardScreen
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/applock_screen.dart'; // contains AppLockScreen
 import 'screens/focus_screen.dart';
 import 'screens/schedule_screen.dart';
+import 'screens/todays_task_screen.dart'; // contains TodaysTasksScreen
+import 'screens/daily_summary_screen.dart';
+import 'screens/data_analytics.dart'; // contains DataAnalytics
 
 void main() {
   runApp(MyApp());
@@ -74,7 +76,6 @@ class _MyAppState extends State<MyApp> {
         '/': (context) => HomeScreen(),
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignupScreen(),
-        '/list': (context) => CardListScreen(),
         '/dashboard': (context) => MainDashboardScreen(),
         '/profile':
             (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
@@ -83,6 +84,9 @@ class _MyAppState extends State<MyApp> {
         '/applock': (context) => AppLockScreen(), // ✅ App Lock added
         '/focus': (context) => FocusScreen(),
         '/schedule': (context) => ScheduleScreen(),
+        '/todays_tasks': (context) => TodaysTaskScreen(),
+        '/daily_summary': (context) => DailySummaryScreen(),
+        '/data_analytics': (context) => DataAnalytics(),
       },
     );
   }
