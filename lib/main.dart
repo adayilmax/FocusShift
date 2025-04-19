@@ -5,10 +5,10 @@ import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/card_list_screen.dart';
-import 'screens/dashboard_screen.dart'; // contains MainDashboardScreen
+import 'screens/dashboard_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/applock_screen.dart'; // contains AppLockScreen
+import 'screens/applock_screen.dart';
 import 'screens/focus_screen.dart';
 import 'screens/schedule_screen.dart';
 
@@ -16,7 +16,7 @@ void main() {
   runApp(MyApp());
 }
 
-/// AppColors, TextStyles, Dimensions
+/// App-wide theming and constants
 class AppColors {
   static const primary = Colors.blue;
   static const accent = Colors.orange;
@@ -25,13 +25,13 @@ class AppColors {
 class AppTextStyles {
   static const header = TextStyle(
     fontSize: 24,
-    color: AppColors.primary,
     fontWeight: FontWeight.bold,
+    color: AppColors.primary,
   );
   static const subHeader = TextStyle(
     fontSize: 18,
-    color: Colors.black87,
     fontStyle: FontStyle.italic,
+    color: Colors.black87,
   );
 }
 
@@ -39,7 +39,7 @@ class AppDimens {
   static const padding = EdgeInsets.all(16.0);
 }
 
-/// MyApp manages the global theme state
+/// Root widget with dynamic theme switching
 class MyApp extends StatefulWidget {
   @override
   State<MyApp> createState() => _MyAppState();
@@ -71,18 +71,16 @@ class _MyAppState extends State<MyApp> {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => HomeScreen(),
-        '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignupScreen(),
-        '/list': (context) => CardListScreen(),
-        '/dashboard': (context) => MainDashboardScreen(),
-        '/profile':
-            (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
-        '/settings':
-            (context) => SettingsScreen(onThemeChanged: _handleThemeChange),
-        '/applock': (context) => AppLockScreen(), // ✅ App Lock added
-        '/focus': (context) => FocusScreen(),
-        '/schedule': (context) => ScheduleScreen(),
+        '/': (c) => HomeScreen(),
+        '/login': (c) => LoginScreen(),
+        '/signup': (c) => SignupScreen(),
+        '/list': (c) => CardListScreen(),
+        '/dashboard': (c) => MainDashboardScreen(),
+        '/profile': (c) => ProfileScreen(onThemeChanged: _handleThemeChange),
+        '/settings': (c) => SettingsScreen(onThemeChanged: _handleThemeChange),
+        '/applock': (c) => AppLockScreen(),
+        '/focus': (c) => FocusScreen(),
+        '/schedule': (c) => ScheduleScreen(),
       },
     );
   }

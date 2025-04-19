@@ -29,17 +29,6 @@ class HomeScreen extends StatelessWidget {
               title: Text("Card List"),
               onTap: () => Navigator.pushNamed(context, '/list'),
             ),
-            Divider(),
-            ListTile(
-              leading: Icon(Icons.bolt, color: AppColors.accent),
-              title: Text("Focus Mode"),
-              onTap: () => Navigator.pushNamed(context, '/focus'),
-            ),
-            ListTile(
-              leading: Icon(Icons.calendar_today, color: AppColors.accent),
-              title: Text("Schedule"),
-              onTap: () => Navigator.pushNamed(context, '/schedule'),
-            ),
           ],
         ),
       ),
@@ -62,18 +51,6 @@ class HomeScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () => Navigator.pushNamed(context, '/list'),
                 child: Text("Card List"),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: Icon(Icons.bolt),
-                label: Text("Focus Mode"),
-                onPressed: () => Navigator.pushNamed(context, '/focus'),
-              ),
-              SizedBox(height: 8),
-              ElevatedButton.icon(
-                icon: Icon(Icons.calendar_today),
-                label: Text("Schedule"),
-                onPressed: () => Navigator.pushNamed(context, '/schedule'),
               ),
             ],
           ),
