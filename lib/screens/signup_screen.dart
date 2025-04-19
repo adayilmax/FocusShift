@@ -41,10 +41,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _submit() {
     if (_formKey.currentState!.validate() && _dob != null) {
-      // TODO: your signup logic…
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      // Simulate sign-up success then redirect to login
+      Navigator.pushReplacementNamed(context, '/login');
     } else {
-      // show an error/snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all fields and select your birth date.')),
+      );
     }
   }
 
@@ -208,7 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         height: _kFieldHeight,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            primary: _kAccentGreen,
+                            backgroundColor: _kAccentGreen,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),

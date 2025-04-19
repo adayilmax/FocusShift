@@ -5,7 +5,6 @@ import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/card_list_screen.dart';
-import 'screens/feature_screen.dart';
 import 'screens/dashboard_screen.dart';      // contains MainDashboardScreen
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
@@ -72,9 +71,8 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/': (context) => HomeScreen(),
         '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignupScreen(),
+        '/signup': (context) => SignUpScreen(),
         '/list': (context) => CardListScreen(),
-        '/feature': (context) => FeatureScreen(),
         '/dashboard': (context) => MainDashboardScreen(),
         '/profile': (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
         '/settings': (context) => SettingsScreen(onThemeChanged: _handleThemeChange),

@@ -143,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: _kFieldHeight,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            primary: _kAccentGreen,
+                            backgroundColor: _kAccentGreen,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),

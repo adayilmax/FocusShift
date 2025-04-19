@@ -24,10 +24,6 @@ class HomeScreen extends StatelessWidget {
               title: Text("Card List"),
               onTap: () => Navigator.pushNamed(context, '/list'),
             ),
-            ListTile(
-              title: Text("Feature Screen"),
-              onTap: () => Navigator.pushNamed(context, '/feature'),
-            ),
           ],
         ),
       ),
@@ -48,11 +44,6 @@ class HomeScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.pushNamed(context, '/list'),
               child: Text("Card List"),
-            ),
-            SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/feature'),
-              child: Text("Feature Screen"),
             ),
           ],
         ),
