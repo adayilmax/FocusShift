@@ -28,12 +28,24 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  js: ^0.6.7
+  firebase_core: ^2.4.1
+  firebase_auth: ^4.2.5
+  cloud_firestore: ^4.3.0
+  flutter_riverpod: ^2.0.0
   flutter:
     sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+dependency_overrides:
+  # bring in the first auth_web that no longer needs `package:js`
+  firebase_auth_web: ^5.11.0
+  # bring in the first storage_web that uses dart:js_interop
+  firebase_storage_web: ^3.7.0
+
 
 dev_dependencies:
   flutter_test:
