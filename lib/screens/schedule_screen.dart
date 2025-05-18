@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Simple Event data class
+import '../state/auth_providers.dart';
+import 'login_screen.dart';
+
+/// Simple Event data class
 class Event {
   final String time;
   final String title;
@@ -8,15 +12,16 @@ class Event {
   Event({required this.time, required this.title});
 }
 
-// --- Schedule Screen Widget ---
-class ScheduleScreen extends StatefulWidget {
+/// Schedule Screen with Firebase auth gating
+class ScheduleScreen extends ConsumerStatefulWidget {
+  static const routeName = '/schedule';
   const ScheduleScreen({Key? key}) : super(key: key);
 
   @override
-  State<ScheduleScreen> createState() => _ScheduleScreenState();
+  ConsumerState<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
+class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   final List<Event> events = [
     Event(time: '08:00', title: 'Morning Stand-up'),
     Event(time: '11:00', title: 'Client Meeting'),
@@ -24,253 +29,218 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     Event(time: '17:00', title: 'Team Review'),
   ];
 
-  // Method to remove an event and update state
+  /// Remove event at [index] and show a SnackBar
   void _removeEvent(int index) {
     if (index < 0 || index >= events.length) return;
-
-    final removedEvent = events[index];
-    // Ensure mounted check *before* setState
-    if (!mounted) return;
+    final removed = events[index];
     setState(() {
       events.removeAt(index);
     });
-
-    // Ensure mounted check *before* ScaffoldMessenger
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${removedEvent.title} removed.'),
-          duration: Duration(seconds: 2),
-        ),
+        SnackBar(content: Text('${removed.title} removed.'), duration: Duration(seconds: 2)),
       );
     }
   }
 
-  // --- Function to show the Add Event Dialog ---
+  /// Show dialog to add a new event
   Future<void> _showAddEventDialog() async {
-    final _formKey = GlobalKey<FormState>();
-    // Controllers are created locally and will be garbage collected.
-    // DO NOT dispose them manually here as it causes errors.
-    final _timeController = TextEditingController();
-    final _titleController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final timeCtrl = TextEditingController();
+    final titleCtrl = TextEditingController();
 
-    final currentContext = context; // Capture context before async gap
-
-    final Event? newEvent = await showDialog<Event>(
-      context: currentContext,
-      builder: (BuildContext dialogContext) {
+    final newEvent = await showDialog<Event>(
+      context: context,
+      builder: (dialogCtx) {
         return AlertDialog(
           title: Text('Add New Event'),
           content: Form(
-            key: _formKey,
+            key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
+              children: [
                 TextFormField(
-                  controller: _timeController,
+                  controller: timeCtrl,
                   decoration: InputDecoration(
                     labelText: 'Time',
                     hintText: 'HH:MM (e.g., 09:30)',
                     icon: Icon(Icons.access_time),
                   ),
                   keyboardType: TextInputType.datetime,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a time';
-                    }
-                    if (!RegExp(r'^\d{2}:\d{2}$').hasMatch(value)) {
-                      return 'Use HH:MM format';
-                    }
-                    try {
-                      final parts = value.split(':');
-                      final hour = int.tryParse(parts[0]);
-                      final minute = int.tryParse(parts[1]);
-                      if (hour == null || minute == null) {
-                        return 'Invalid number format';
-                      }
-                      if (hour < 0 || hour > 23) {
-                        return 'Hour must be 0-23';
-                      }
-                      if (minute < 0 || minute > 59) {
-                        return 'Minute must be 0-59';
-                      }
-                    } catch (e) {
-                      return 'Invalid format';
-                    }
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'Please enter time';
+                    final match = RegExp(r'^\d{2}:\d{2}$').firstMatch(val);
+                    if (match == null) return 'Invalid format';
+                    final parts = val.split(':');
+                    final h = int.tryParse(parts[0]);
+                    final m = int.tryParse(parts[1]);
+                    if (h == null || m == null) return 'Invalid numbers';
+                    if (h < 0 || h > 23) return 'Hour 0-23';
+                    if (m < 0 || m > 59) return 'Minute 0-59';
                     return null;
                   },
                 ),
                 SizedBox(height: 8),
                 TextFormField(
-                  controller: _titleController,
+                  controller: titleCtrl,
                   decoration: InputDecoration(
                     labelText: 'Title',
                     hintText: 'Event description',
                     icon: Icon(Icons.title),
                   ),
                   textCapitalization: TextCapitalization.sentences,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a title';
-                    }
-                    return null;
-                  },
+                  validator: (val) =>
+                  val == null || val.trim().isEmpty ? 'Enter title' : null,
                 ),
               ],
             ),
           ),
-          actions: <Widget>[
+          actions: [
             TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(null),
               child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop(null);
-              },
             ),
             ElevatedButton(
-              child: Text('Add'),
               onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final event = Event(
-                    time: _timeController.text,
-                    title: _titleController.text,
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(dialogCtx).pop(
+                    Event(time: timeCtrl.text, title: titleCtrl.text),
                   );
-                  Navigator.of(dialogContext).pop(event);
                 }
               },
+              child: Text('Add'),
             ),
           ],
         );
       },
     );
 
-    // --- REMOVED controller dispose calls ---
-    // _timeController.dispose(); // REMOVED
-    // _titleController.dispose(); // REMOVED
-
-    // --- Add event block ---
-    if (!mounted) return; // Check if widget is still mounted
-
-    if (newEvent != null) {
-      setState(() {
-        events.add(newEvent);
-        events.sort((a, b) => a.time.compareTo(b.time));
-      });
-
-      // Show SnackBar *after* setState, still checking mounted status
-      ScaffoldMessenger.of(currentContext).showSnackBar(
-        SnackBar(
-          content: Text('${newEvent.title} added.'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
+    // After dialog
+    if (!mounted || newEvent == null) return;
+    setState(() {
+      events.add(newEvent);
+      events.sort((a, b) => a.time.compareTo(b.time));
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${newEvent.title} added.'), duration: Duration(seconds: 2)),
+    );
   }
-  // --- End Dialog Function ---
-
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultTextColor = isDark ? Colors.white : Colors.black87;
-    final sundayColor = Colors.green;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Schedule'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        // --- Column Layout ---
-        child: Column(
-          children: [
-            // --- MODIFIED: Wrapped GridView in Flexible ---
-            // 1) Calendar Grid Placeholder
-            Flexible( // Allows GridView to shrink if needed, doesn't force Expanded height
-              child: GridView.builder(
-                shrinkWrap: true, // Still needed with Flexible in Column
-                // physics: const NeverScrollableScrollPhysics(), // Not strictly needed if Flexible works
-                itemCount: 31,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                ),
-                itemBuilder: (context, i) {
-                  final day = (i + 1);
-                  final isSunday = (i % 7) == 6;
-                  final isToday = day == DateTime.now().day;
-
-                  return Container(
-                    alignment: Alignment.center,
-                    decoration: isToday ? BoxDecoration(
-                        border: Border.all(color: colorScheme.primary, width: 1),
-                        shape: BoxShape.circle
-                    ) : null,
-                    child: Text(
-                      day.toString(),
-                      style: TextStyle(
-                        color: isSunday ? sundayColor : defaultTextColor,
-                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            // --- END MODIFICATION ---
-
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-
-            // 2) Event List - Kept Expanded
-            Expanded( // Takes remaining space after Flexible GridView and other fixed items
-              child: ListView.separated(
-                itemCount: events.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, i) {
-                  if (i >= events.length) return const SizedBox.shrink();
-                  final e = events[i];
-                  return Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    child: ListTile(
-                      leading: Text(
-                        e.time,
-                        style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.primary),
-                      ),
-                      title: Text(e.title),
-                      trailing: IconButton(
-                        tooltip: 'Delete Event',
-                        icon: Icon(Icons.delete_outline, color: colorScheme.error),
-                        onPressed: () => _removeEvent(i),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 3) Add Event Button Row (Stays at bottom)
-            Row(
+    final auth = ref.watch(authStateProvider);
+    return auth.when(
+      data: (user) {
+        if (user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+          });
+          return const Scaffold();
+        }
+        // Authenticated → show schedule
+        return Scaffold(
+          appBar: AppBar(title: const Text('Schedule')),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add a new event'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colorScheme.primary,
-                      side: BorderSide(color: colorScheme.primary.withOpacity(0.5)),
+                // Calendar grid
+                Flexible(
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    itemCount: 31,
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 7,
                     ),
-                    onPressed: _showAddEventDialog,
+                    itemBuilder: (_, i) {
+                      final day = i + 1;
+                      final isSunday = (i % 7) == 6;
+                      final isToday = day == DateTime.now().day;
+                      final colorScheme = Theme.of(context).colorScheme;
+                      return Container(
+                        alignment: Alignment.center,
+                        decoration: isToday
+                            ? BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: colorScheme.primary, width: 1),
+                        )
+                            : null,
+                        child: Text(
+                          day.toString(),
+                          style: TextStyle(
+                            color:
+                            isSunday ? colorScheme.secondary : null,
+                            fontWeight: isToday
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      );
+                    },
                   ),
+                ),
+                SizedBox(height: 16),
+                Divider(),
+                SizedBox(height: 8),
+
+                // Event list
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: events.length,
+                    separatorBuilder: (_, __) => SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final e = events[i];
+                      return Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        child: ListTile(
+                          leading: Text(
+                            e.time,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color:
+                                Theme.of(context).colorScheme.primary),
+                          ),
+                          title: Text(e.title),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete_outline,
+                                color:
+                                Theme.of(context).colorScheme.error),
+                            onPressed: () => _removeEvent(i),
+                            tooltip: 'Delete Event',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                SizedBox(height: 16),
+                // Add event button
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _showAddEventDialog,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add a new event'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        // --- End Column Layout ---
+          ),
+        );
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Auth error: $e')),
       ),
     );
   }

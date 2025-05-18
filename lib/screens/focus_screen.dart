@@ -1,47 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FocusScreen extends StatefulWidget {
+import '../state/auth_providers.dart';
+import '../state/firestore_providers.dart';
+import 'login_screen.dart';
+
+/// Focus Screen: toggle between focus/timer and record sessions to Firestore
+class FocusScreen extends ConsumerStatefulWidget {
+  static const routeName = '/focus';
+  const FocusScreen({Key? key}) : super(key: key);
+
   @override
-  _FocusScreenState createState() => _FocusScreenState();
+  ConsumerState<FocusScreen> createState() => _FocusScreenState();
 }
 
-class _FocusScreenState extends State<FocusScreen> {
+class _FocusScreenState extends ConsumerState<FocusScreen> {
   bool _isFocusMode = true;
   double _minutes = 25;
-  String _topic = 'topic';
+  String _topic = 'Topic';
 
   @override
   Widget build(BuildContext context) {
-    // Use your theme’s accent color, or AppColors.accent
-    final accent = Theme.of(context).colorScheme.secondary;
+    final authState = ref.watch(authStateProvider);
+    return authState.when(
+      data: (user) {
+        if (user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+          });
+          return const Scaffold();
+        }
+        return _buildScaffold(context, user.uid);
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Auth error: $e')),
+      ),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, String uid) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.secondary;
+    final grey300 = Colors.grey.shade300;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isFocusMode ? 'Focus Mode' : 'Timer Mode')),
+      appBar: AppBar(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
+        title: Text(
+          _isFocusMode ? 'Focus Mode' : 'Timer Mode',
+          style: theme.textTheme.titleLarge,
+        ),
+        iconTheme: theme.iconTheme,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: accent),
+            onPressed: () => ref.read(authServiceProvider).signOut(),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // 1) Toggle
+            // Toggle focus/timer mode
             ToggleButtons(
               isSelected: [_isFocusMode, !_isFocusMode],
               borderRadius: BorderRadius.circular(30),
               selectedBorderColor: accent,
-              fillColor: accent.withOpacity(0.1),
+              fillColor: accent.withAlpha((0.1 * 255).round()),
               children: [
-                Icon(
-                  Icons.hourglass_empty,
-                  color: _isFocusMode ? accent : Colors.grey,
-                ),
-                Icon(
-                  Icons.access_time,
-                  color: !_isFocusMode ? accent : Colors.grey,
-                ),
+                Icon(Icons.hourglass_empty,
+                    color: _isFocusMode ? accent : grey300),
+                Icon(Icons.access_time,
+                    color: !_isFocusMode ? accent : grey300),
               ],
               onPressed: (idx) => setState(() => _isFocusMode = (idx == 0)),
             ),
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
 
-            // 2) Timer circle
+            // Timer display
             Container(
               width: 200,
               height: 200,
@@ -52,13 +93,14 @@ class _FocusScreenState extends State<FocusScreen> {
               child: Center(
                 child: Text(
                   '${_minutes.toInt().toString().padLeft(2, '0')}:00',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.headlineMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-            // 3) Slider
+            // Duration slider
             Slider(
               value: _minutes,
               min: 1,
@@ -67,28 +109,31 @@ class _FocusScreenState extends State<FocusScreen> {
               label: '${_minutes.round()}m',
               onChanged: (v) => setState(() => _minutes = v),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-            // 4) Topic chip
+            // Topic chip
             Chip(
-              label: Text(_topic),
-              backgroundColor: _isFocusMode ? accent : Colors.grey[300],
+              label: Text(_topic, style: theme.textTheme.bodyLarge),
+              backgroundColor: _isFocusMode ? accent : grey300,
             ),
 
-            Spacer(),
+            const Spacer(),
 
-            // 5) Start button
+            // Start focus session
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {
-                  // TODO: start your timer
+                onPressed: () async {
+                  // TODO: Implement addFocusSession in FirestoreService
+                  await ref
+                      .read(firestoreServiceProvider)
+                      .addFocusSession(uid, _minutes.toInt(), _topic, DateTime.now());
                 },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: accent),
-                  shape: StadiumBorder(),
+                  shape: const StadiumBorder(),
                 ),
-                child: Text('FOCUS'),
+                child: Text('FOCUS', style: theme.textTheme.labelLarge),
               ),
             ),
           ],

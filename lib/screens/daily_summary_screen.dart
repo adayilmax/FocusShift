@@ -1,239 +1,177 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Define the primary color used in this screen locally, if needed
-// Or rely on Theme.of(context).colorScheme.primary or accentColor
-const Color _kPrimaryColor = Colors.greenAccent; // Example color
+import '../state/auth_providers.dart';
+import '../state/firestore_providers.dart';
+import 'login_screen.dart';
+import '../widgets/task_item.dart';
 
-class DailySummaryScreen extends StatelessWidget {
-  // Add Key constructor
-  const DailySummaryScreen({Key? key}) : super(key: key);
+const Color _kPrimaryColor = Colors.greenAccent;
+
+class DailySummaryScreen extends ConsumerWidget {
+  const DailySummaryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    return authState.when(
+      data: (user) {
+        if (user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacementNamed(
+                context, LoginScreen.routeName);
+          });
+          return const Scaffold();
+        }
+        return _buildBody(context, ref, user.uid);
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Auth error: $e')),
+      ),
+    );
+  }
+
+  Widget _buildBody(
+      BuildContext context, WidgetRef ref, String uid) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final generalTextColor = isDark ? Colors.white : Colors.black;
-    final theme = Theme.of(context); // Get theme data
+    final theme = Theme.of(context);
+
+    final summaryAsync = ref.watch(dailySummaryProvider(uid));
+    final tasksAsync = ref.watch(completedTasksProvider(uid));
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: generalTextColor),
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.of(context).pop();
-              }
-            }
+          icon: Icon(Icons.arrow_back, color: generalTextColor),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        // Correct AppBar Title
-        title: Text("Daily Summary", style: TextStyle(color: generalTextColor)),
+        title: Text("Daily Summary",
+            style: TextStyle(color: generalTextColor)),
         actions: [
-          // Optional: Keep profile avatar action if needed on this screen too
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 16),
             child: CircleAvatar(
               backgroundColor: Colors.grey.shade300,
               child: Icon(Icons.person, color: Colors.grey.shade800),
             ),
-          )
+          ),
         ],
       ),
-      // --- BODY for Daily Summary ---
-      body: ListView( // Use ListView for potentially scrollable content
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          // --- Example Summary Section ---
-          Text(
-              'Summary for Today', // Or selected date
-              style: theme.textTheme.headlineSmall?.copyWith(color: generalTextColor, fontWeight: FontWeight.bold)
-          ),
-          SizedBox(height: 16),
+      body: summaryAsync.when(
+        data: (summary) => ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Summary for Today',
+                style: theme.textTheme.headlineSmall
+                    ?.copyWith(
+                    color: generalTextColor,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
 
-          // Example Card for Focus Time
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Icon(Icons.timer_outlined, color: theme.colorScheme.primary, size: 30),
-                  SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Total Focus Time', style: theme.textTheme.titleMedium?.copyWith(color: generalTextColor)),
-                      SizedBox(height: 4),
-                      Text('3h 45m', style: theme.textTheme.headlineSmall?.copyWith(color: generalTextColor, fontWeight: FontWeight.bold)),
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 16),
-
-          // Example Card for Tasks Completed
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle_outline, color: Colors.green, size: 30),
-                  SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Tasks Completed', style: theme.textTheme.titleMedium?.copyWith(color: generalTextColor)),
-                      SizedBox(height: 4),
-                      Text('5 / 8', style: theme.textTheme.headlineSmall?.copyWith(color: generalTextColor, fontWeight: FontWeight.bold)),
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 16),
-
-          // You could add more summary widgets here (e.g., charts, detailed task list)
-          // If you need to display tasks like in TodaysTaskScreen, you can reuse TaskItem:
-          Text(
-              'Completed Tasks',
-              style: theme.textTheme.titleMedium?.copyWith(color: generalTextColor, fontWeight: FontWeight.bold)
-          ),
-          SizedBox(height: 8),
-          // Example of using the corrected TaskItem
-          TaskItem(time: "8:00 AM", label: "Focus", profileCount: 1, primaryColor: _kPrimaryColor),
-          TaskItem(time: "9:00 AM", label: "Study", profileCount: 2, primaryColor: _kPrimaryColor),
-          // ... add more TaskItems if needed ...
-
-        ],
-      ),
-    );
-  }
-}
-
-
-// --- CORRECTED TaskItem Widget Definition ---
-// It's better practice to move this to its own file (e.g., widgets/task_item.dart)
-// and import it here and in todays_task_screen.dart.
-// But including it here ensures this file has the fix.
-
-class TaskItem extends StatelessWidget {
-  final String time;
-  final String label;
-  final int profileCount;
-  final Color primaryColor;
-
-  const TaskItem({
-    Key? key,
-    required this.time,
-    required this.label,
-    required this.profileCount,
-    required this.primaryColor,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final generalTextColor = isDark ? Colors.white : Colors.black;
-    const labelTextColor = Colors.black;
-
-    // --- AVATAR STACK CONFIGURATION ---
-    const double avatarRadius = 10.0;
-    const double avatarDiameter = avatarRadius * 2;
-    const double overlap = 8.0; // How many pixels to overlap
-
-    // Calculate width needed for the stack based on overlap
-    final int validProfileCount = profileCount < 0 ? 0 : profileCount;
-    final double avatarStackWidth = validProfileCount == 0
-        ? 0
-        : avatarDiameter + (validProfileCount - 1) * (avatarDiameter - overlap);
-    // --- END AVATAR STACK CONFIGURATION ---
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 10.0),
-            child: Text(
-                time,
-                // Use theme text style for body
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: generalTextColor) ?? TextStyle(color: generalTextColor)
-            ),
-          ),
-          SizedBox(width: 12),
-          if (label.isNotEmpty)
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            // Focus Time Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: labelTextColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (validProfileCount > 0)
-                      SizedBox(
-                        width: avatarStackWidth,
-                        height: avatarDiameter,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: List.generate(validProfileCount, (index) {
-                            final double leftOffset = index * (avatarDiameter - overlap);
-                            return Positioned(
-                              left: leftOffset >= 0 ? leftOffset : 0,
-                              child: CircleAvatar(
-                                radius: avatarRadius,
-                                backgroundColor: Colors.white,
-                                child: Icon(
-                                  Icons.person,
-                                  size: 12,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
+                    Icon(Icons.timer_outlined,
+                        color: theme.colorScheme.primary, size: 30),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Text('Total Focus Time',
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(
+                                color: generalTextColor)),
+                        const SizedBox(height: 4),
+                        Text('${summary.focusTime}',
+                            style: theme.textTheme.headlineSmall
+                                ?.copyWith(
+                                color: generalTextColor,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    )
                   ],
                 ),
               ),
-            )
-          else // Empty Slot Placeholder
-            Expanded(
-              child: Container(
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+            ),
+            const SizedBox(height: 16),
+
+            // Tasks Completed Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle_outline,
+                        color: Colors.green, size: 30),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Text('Tasks Completed',
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(
+                                color: generalTextColor)),
+                        const SizedBox(height: 4),
+                        Text('${summary.tasksCompleted}',
+                            style: theme.textTheme.headlineSmall
+                                ?.copyWith(
+                                color: generalTextColor,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    )
+                  ],
                 ),
               ),
             ),
-        ],
+            const SizedBox(height: 24),
+
+            Text('Completed Tasks',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(
+                    color: generalTextColor,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+
+            // Task List from Firestore
+            tasksAsync.when(
+              data: (tasks) => Column(
+                children: tasks
+                    .map((t) => TaskItem(
+                  time: t.time,
+                  label: t.label,
+                  profileCount: t.profileCount,
+                  primaryColor: _kPrimaryColor,
+                ))
+                    .toList(),
+              ),
+              loading: () =>
+              const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Error: $e',
+                  style: TextStyle(color: generalTextColor)),
+            ),
+          ],
+        ),
+        loading: () =>
+        const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
       ),
     );
   }
 }
-
-// Remove these local text style constants if you are consistently using Theme.of(context).textTheme
-/*
-const TextStyle _kHeaderStyle = TextStyle(fontSize: 24, fontWeight: FontWeight.bold);
-const TextStyle _kSubHeaderStyle = TextStyle(fontSize: 18, color: Colors.black87, fontStyle: FontStyle.italic);
-const TextStyle _kBodyStyle = TextStyle(fontSize: 14);
-*/

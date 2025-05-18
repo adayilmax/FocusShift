@@ -1,13 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AppLockScreen extends StatelessWidget {
-  const AppLockScreen({super.key});
+import '../state/auth_providers.dart';
+import '../state/firestore_providers.dart';
+import 'login_screen.dart';
+
+class AppLockScreen extends ConsumerWidget {
+  const AppLockScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDarkMode ? Colors.white : Colors.black;
-    final barTextColor = isDarkMode ? Colors.black : Colors.white;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    return authState.when(
+      data: (user) {
+        if (user == null) {
+          // Not signed in → back to Login
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacementNamed(
+                context, LoginScreen.routeName);
+          });
+          return const Scaffold();
+        }
+        return _buildScaffold(context, ref, user.uid);
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Auth error: $e')),
+      ),
+    );
+  }
+
+  Widget _buildScaffold(
+      BuildContext context, WidgetRef ref, String uid) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final barTextColor = isDark ? Colors.black : Colors.white;
+
+    // Firestore streams—you’ll implement these providers
+    final limitsAsync = ref.watch(appLockLimitsProvider(uid));
+    final weekAsync = ref.watch(lastWeekUsageProvider(uid));
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -22,62 +55,106 @@ class AppLockScreen extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.person, color: textColor),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            icon: Icon(Icons.logout, color: textColor),
+            onPressed: () => ref.read(authServiceProvider).signOut(),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                // TODO: record a focus session in Firestore
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.greenAccent,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size.fromHeight(48),
               ),
-              child: const Text("Focus Now", style: TextStyle(fontSize: 16)),
+              child:
+              const Text("Focus Now", style: TextStyle(fontSize: 16)),
             ),
             const SizedBox(height: 24),
-            Text("Hour Limits", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textColor)),
+            Text("Hour Limits",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: textColor)),
             const Divider(color: Colors.green),
             const SizedBox(height: 12),
 
-            _horizontalLineItem("assets/icons/instagram.png", 3, barTextColor),
-            _horizontalLineItem("assets/icons/twitter.png", 2, barTextColor),
-            _horizontalLineItem("assets/icons/youtube.png", 1, barTextColor),
-            _horizontalLineItem("assets/icons/controller.png", 4, barTextColor),
+            // — LIMITS LIST —
+            limitsAsync.when(
+              data: (limits) => Column(
+                children: limits.entries.map((entry) {
+                  final iconMap = {
+                    'instagram': 'assets/icons/instagram.png',
+                    'twitter': 'assets/icons/twitter.png',
+                    'youtube': 'assets/icons/youtube.png',
+                    'games': 'assets/icons/controller.png',
+                  };
+                  final iconPath = iconMap[entry.key] ?? '';
+                  return _horizontalLineItem(
+                      iconPath, entry.value, barTextColor);
+                }).toList(),
+              ),
+              loading: () =>
+              const Center(child: CircularProgressIndicator()),
+              error: (e, _) =>
+                  Text('Error loading limits: $e',
+                      style: TextStyle(color: textColor)),
+            ),
 
             const SizedBox(height: 12),
             Row(
               children: [
                 const SizedBox(width: 32),
-                Icon(Icons.add_circle, size: 36, color: Colors.greenAccent),
+                IconButton(
+                  icon: const Icon(Icons.add_circle,
+                      size: 36, color: Colors.greenAccent),
+                  onPressed: () {
+                    // TODO: push dialog to add a new limit
+                  },
+                ),
               ],
             ),
 
             const SizedBox(height: 32),
-            Text("Last Week", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textColor)),
+            Text("Last Week",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: textColor)),
             const Divider(color: Colors.green),
             const SizedBox(height: 12),
 
-            _verticalBarSection(textColor),
+            // — LAST WEEK BARS —
+            weekAsync.when(
+              data: (data) =>
+                  _verticalBarSectionFromData(data, textColor),
+              loading: () =>
+              const Center(child: CircularProgressIndicator()),
+              error: (e, _) =>
+                  Text('Error loading week data: $e',
+                      style: TextStyle(color: textColor)),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _horizontalLineItem(String iconPath, int hours, Color barTextColor) {
-    double maxWidth = 200;
-    double lineWidth = (hours / 5.0) * maxWidth;
+  Widget _horizontalLineItem(
+      String iconPath, int hours, Color barTextColor) {
+    const double maxWidth = 200;
+    final double lineWidth = (hours / 5.0) * maxWidth;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -91,39 +168,36 @@ class AppLockScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
-            child: Text(
-              '$hours',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: barTextColor),
-            ),
+            child: Text('$hours',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: barTextColor)),
           ),
         ],
       ),
     );
   }
 
-  Widget _verticalBarSection(Color textColor) {
-    final data = [
-      {"label": "Work", "value": 12},
-      {"label": "Screen", "value": 17},
-      {"label": "Sport", "value": 9},
-      {"label": "Games", "value": 7},
-      {"label": "Social", "value": 14},
-    ];
-
+  Widget _verticalBarSectionFromData(
+      List<Map<String, dynamic>> data, Color textColor) {
     return SizedBox(
       height: 240,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: data.map((item) {
-          final value = item['value'] as int;
-          final label = item['label'] as String;
-          final barHeight = value * 6.0;
-
+          final int value = item['value'] as int;
+          final String label = item['label'] as String;
+          final double barHeight = value * 6.0;
           return Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text('$value', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+              Text('$value',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textColor)),
               const SizedBox(height: 4),
               Container(
                 height: barHeight,
@@ -134,7 +208,11 @@ class AppLockScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textColor)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: textColor)),
             ],
           );
         }).toList(),

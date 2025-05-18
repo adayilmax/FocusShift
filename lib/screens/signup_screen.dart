@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Color & style constants (same as login—consider moving to a shared file)
 const Color _kAccentGreen = Color(0xFF00FFD1);
@@ -28,6 +29,7 @@ const TextStyle _kLinkBoldStyle = TextStyle(
 
 class SignupScreen extends StatefulWidget {
   static const routeName = '/signup';
+  const SignupScreen({Key? key}) : super(key: key);
   @override
   _SignupScreenState createState() => _SignupScreenState();
 }
@@ -38,15 +40,42 @@ class _SignupScreenState extends State<SignupScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   DateTime? _dob;
+  bool _loading = false;
 
-  void _submit() {
-    if (_formKey.currentState!.validate() && _dob != null) {
-      // Simulate sign-up success then redirect to login
-      Navigator.pushReplacementNamed(context, '/login');
-    } else {
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || _dob == null) {
+      // Just show the SnackBar and return early
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all fields and select your birth date.')),
+        const SnackBar(
+          content: Text('Please fill all fields and select your birth date.'),
+        ),
       );
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      // Create the Firebase user
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _email.text.trim(),
+        password: _password.text,
+      );
+      // Optionally, update displayName
+      await FirebaseAuth.instance.currentUser!
+          .updateDisplayName(_name.text.trim());
+
+      // After signup, send them to the dashboard
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Signup failed")),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("An unexpected error occurred.")),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -58,7 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
       firstDate: DateTime(1900),
       lastDate: today,
     );
-    if (picked != null) setState(() => _dob = picked);
+    if (picked != null && mounted) setState(() => _dob = picked);
   }
 
   InputDecoration _decoration(String label, IconData icon) {
@@ -66,10 +95,10 @@ class _SignupScreenState extends State<SignupScreen> {
       labelText: label,
       prefixIcon: Icon(icon, color: _kFieldBorder),
       border: OutlineInputBorder(
-        borderSide: BorderSide(color: _kFieldBorder),
+        borderSide: const BorderSide(color: _kFieldBorder),
         borderRadius: BorderRadius.circular(8),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
     );
   }
 
@@ -96,40 +125,33 @@ class _SignupScreenState extends State<SignupScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("FocusShift", style: _kLogoStyle),
+                    const Text("FocusShift", style: _kLogoStyle),
                     InkWell(
                       onTap: () => Navigator.pop(context),
-                      child: Icon(Icons.close,
-                          color: _kAccentGreen, size: 28),
+                      child:
+                      const Icon(Icons.close, color: _kAccentGreen, size: 28),
                     ),
                   ],
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
 
                 // Title + subtitle
-                Text("Sign Up", style: _kTitleStyle),
-                SizedBox(height: 8),
+                const Text("Sign Up", style: _kTitleStyle),
+                const SizedBox(height: 8),
                 GestureDetector(
-                  onTap: () => Navigator
-                      .pushReplacementNamed(context, '/login'),
+                  onTap: () =>
+                      Navigator.pushReplacementNamed(context, '/login'),
                   child: RichText(
                     text: TextSpan(
                       text: "Already registered? ",
                       style: _kLinkStyle,
                       children: [
-                        TextSpan(
-                            text: "Sign in", style: _kLinkBoldStyle)
+                        TextSpan(text: "Sign in", style: _kLinkBoldStyle)
                       ],
                     ),
                   ),
                 ),
-                SizedBox(height: 24),
-
-                // (Optional illustration goes here)
-                // SizedBox(
-                //   height: 120,
-                //   child: Image.asset('assets/auth_illustration.png'),
-                // ),
+                const SizedBox(height: 24),
 
                 // Form
                 Form(
@@ -140,52 +162,46 @@ class _SignupScreenState extends State<SignupScreen> {
                         height: _kFieldHeight,
                         child: TextFormField(
                           controller: _name,
-                          decoration: _decoration(
-                              "Name", Icons.person_outline),
+                          decoration:
+                          _decoration("Name", Icons.person_outline),
                           validator: (v) =>
-                              v != null && v.trim().isNotEmpty
-                                  ? null
-                                  : "Required.",
+                          v != null && v.trim().isNotEmpty ? null : "Required.",
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       SizedBox(
                         height: _kFieldHeight,
                         child: TextFormField(
                           controller: _email,
-                          decoration: _decoration(
-                              "Email", Icons.mail_outline),
+                          decoration:
+                          _decoration("Email", Icons.mail_outline),
                           validator: (v) =>
-                              v != null && v.contains("@")
-                                  ? null
-                                  : "Invalid email.",
+                          v != null && v.contains("@") ? null : "Invalid email.",
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       SizedBox(
                         height: _kFieldHeight,
                         child: TextFormField(
                           controller: _password,
-                          decoration: _decoration(
-                              "Password", Icons.lock_outline),
+                          decoration:
+                          _decoration("Password", Icons.lock_outline),
                           obscureText: true,
-                          validator: (v) =>
-                              v != null && v.length >= 6
-                                  ? null
-                                  : "Min 6 chars.",
+                          validator: (v) => v != null && v.length >= 6
+                              ? null
+                              : "Min 6 chars.",
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       SizedBox(
                         height: _kFieldHeight,
                         child: InkWell(
-                          onTap: _pickDate,
+                          onTap: _loading ? null : _pickDate,
                           child: InputDecorator(
                             decoration: _decoration(
                                 "Date of Birth", Icons.calendar_today),
                             child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   _dob == null
@@ -198,14 +214,13 @@ class _SignupScreenState extends State<SignupScreen> {
                                         : Colors.black,
                                   ),
                                 ),
-                                Icon(Icons.arrow_forward_ios,
-                                    size: 16),
+                                const Icon(Icons.arrow_forward_ios, size: 16),
                               ],
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
                       SizedBox(
                         height: _kFieldHeight,
                         child: ElevatedButton(
@@ -215,9 +230,10 @@ class _SignupScreenState extends State<SignupScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          onPressed: _submit,
-                          child: Icon(Icons.arrow_forward,
-                              color: Colors.black),
+                          onPressed: _loading ? null : _submit,
+                          child: _loading
+                              ? const CircularProgressIndicator(color: Colors.black)
+                              : const Icon(Icons.arrow_forward, color: Colors.black),
                         ),
                       ),
                     ],

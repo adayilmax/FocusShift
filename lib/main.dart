@@ -1,24 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 // Screens
+import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/dashboard_screen.dart'; // contains MainDashboardScreen
+import 'screens/dashboard_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/applock_screen.dart'; // contains AppLockScreen
+import 'screens/applock_screen.dart';
 import 'screens/focus_screen.dart';
 import 'screens/schedule_screen.dart';
-import 'screens/todays_task_screen.dart'; // contains TodaysTasksScreen
+import 'screens/todays_task_screen.dart';
 import 'screens/daily_summary_screen.dart';
-import 'screens/data_analytics.dart'; // contains DataAnalytics
+import 'screens/data_analytics.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-/// AppColors, TextStyles, Dimensions
+/// Some global style constants
 class AppColors {
   static const primary = Colors.blue;
   static const accent = Colors.orange;
@@ -41,8 +52,10 @@ class AppDimens {
   static const padding = EdgeInsets.all(16.0);
 }
 
-/// MyApp manages the global theme state
+/// The root widget
 class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -60,6 +73,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Focus Shift',
+      debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -73,20 +87,18 @@ class _MyAppState extends State<MyApp> {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => HomeScreen(),
+        '/': (context) => const HomeScreen(),
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignupScreen(),
-        '/dashboard': (context) => MainDashboardScreen(),
-        '/profile':
-            (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
-        '/settings':
-            (context) => SettingsScreen(onThemeChanged: _handleThemeChange),
-        '/applock': (context) => AppLockScreen(), // ✅ App Lock added
-        '/focus': (context) => FocusScreen(),
-        '/schedule': (context) => ScheduleScreen(),
-        '/todays_tasks': (context) => TodaysTaskScreen(),
-        '/daily_summary': (context) => DailySummaryScreen(),
-        '/data_analytics': (context) => DataAnalytics(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/profile': (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
+        '/settings': (context) => SettingsScreen(onThemeChanged: _handleThemeChange),
+        '/applock': (context) => const AppLockScreen(),
+        '/focus': (context) => const FocusScreen(),
+        '/schedule': (context) => const ScheduleScreen(),
+        '/todays_tasks': (context) => const TodaysTaskScreen(),
+        '/daily_summary': (context) => const DailySummaryScreen(),
+        '/data_analytics': (context) => const DataAnalytics(),
       },
     );
   }

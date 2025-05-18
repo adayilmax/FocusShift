@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "461547996397",
+    "project_id": "focusshift-de5e0",
+    "storage_bucket": "focusshift-de5e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:461547996397:android:8b41dae097a4be6170f8e4",
+        "android_client_info": {
+          "package_name": "com.example.focus_shift"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq84xVMWVYBQMAx5bP6Z35XgdW3Oa_u9A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
