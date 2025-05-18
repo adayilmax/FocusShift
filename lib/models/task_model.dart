@@ -1,30 +1,29 @@
-/// Represents a single completed‐task entry.
+// simple model for one task; adapt your field names as needed
 class TaskModel {
-  final String id;            // Firestore document ID
-  final String time;          // e.g. "8:00 AM"
-  final String label;         // e.g. "Study"
-  final int profileCount;     // e.g. 2 (number of participants)
+  final String id;
+  final String time;
+  final String label;
+  final int profileCount;
+  final bool completed;
+  final String createdBy;
 
   TaskModel({
     required this.id,
     required this.time,
     required this.label,
     required this.profileCount,
+    required this.completed,
+    required this.createdBy,
   });
 
-  // Optional: factory if you need to create from JSON
-  factory TaskModel.fromMap(String id, Map<String, dynamic> data) {
+  factory TaskModel.fromMap(Map<String, dynamic> map, {required String id}) {
     return TaskModel(
       id: id,
-      time: data['time'] as String? ?? '',
-      label: data['label'] as String? ?? '',
-      profileCount: data['profileCount'] as int? ?? 0,
+      time: map['time'] as String? ?? '',
+      label: map['label'] as String? ?? '',
+      profileCount: map['profileCount'] as int? ?? 0,
+      completed: map['completed'] as bool? ?? false,
+      createdBy: map['createdBy'] as String? ?? '',
     );
   }
-
-  Map<String, dynamic> toMap() => {
-    'time': time,
-    'label': label,
-    'profileCount': profileCount,
-  };
 }

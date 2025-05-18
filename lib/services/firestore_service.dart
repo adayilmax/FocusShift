@@ -12,53 +12,58 @@ class FirestoreService {
         .doc(uid)
         .collection('appLockLimits')
         .snapshots()
-        .map((snapshot) {
+        .map((snap) {
       final limits = <String, int>{};
-      for (final doc in snapshot.docs) {
+      for (final doc in snap.docs) {
         final data = doc.data();
-        final hours = data['hours'] as int? ?? 0;
-        limits[doc.id] = hours;
+        limits[doc.id] = (data['hours'] as int?) ?? 0;
       }
       return limits;
     });
   }
 
-  /// Stream of last week usage data: list of {label, value}
+  /// Stream of last-week usage data
   Stream<List<Map<String, dynamic>>> watchLastWeekUsage(String uid) {
     return _firestore
         .collection('users')
         .doc(uid)
         .collection('lastWeekUsage')
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
+        .map((snap) => snap.docs.map((doc) {
       final data = doc.data();
       return {
-        'label': data['label'] as String? ?? '',
-        'value': data['value'] as int? ?? 0,
+        'label': (data['label'] as String?) ?? '',
+        'value': (data['value'] as int?) ?? 0,
       };
     }).toList());
   }
 
-  /// Fetch daily summary for the current date
+  /// Fetch today's summary (or defaults if none)
   Future<DailySummary> fetchDailySummary(String uid) async {
-    final today = DateTime.now();
-    final dateId = '${today.year.toString().padLeft(4, '0')}-'
-        '${today.month.toString().padLeft(2, '0')}-'
-        '${today.day.toString().padLeft(2, '0')}';
-    final doc = await _firestore
+    final now = DateTime.now();
+    final dateId = '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    final docSnap = await _firestore
         .collection('users')
         .doc(uid)
         .collection('dailySummary')
         .doc(dateId)
         .get();
-    final data = doc.data()!;
+
+    if (!docSnap.exists || docSnap.data() == null) {
+      return DailySummary(focusTime: '0h 0m', tasksCompleted: 0);
+    }
+
+    final data = docSnap.data()!;
     return DailySummary(
-      focusTime: data['focusTime'] as String? ?? '0h 0m',
-      tasksCompleted: data['tasksCompleted'] as int? ?? 0,
+      focusTime: (data['focusTime'] as String?) ?? '0h 0m',
+      tasksCompleted: (data['tasksCompleted'] as int?) ?? 0,
     );
   }
 
-  /// Stream of completed tasks, ordered by time
+  /// Stream of completed tasks, now including `completed` & `createdBy`
   Stream<List<TaskModel>> watchCompletedTasks(String uid) {
     return _firestore
         .collection('users')
@@ -66,13 +71,15 @@ class FirestoreService {
         .collection('completedTasks')
         .orderBy('time')
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
+        .map((snap) => snap.docs.map((doc) {
       final data = doc.data();
       return TaskModel(
         id: doc.id,
-        time: data['time'] as String? ?? '',
-        label: data['label'] as String? ?? '',
-        profileCount: data['profileCount'] as int? ?? 0,
+        time: (data['time'] as String?) ?? '',
+        label: (data['label'] as String?) ?? '',
+        profileCount: (data['profileCount'] as int?) ?? 0,
+        completed: (data['completed'] as bool?) ?? true,
+        createdBy: (data['createdBy'] as String?) ?? uid,
       );
     }).toList());
   }
@@ -95,5 +102,3 @@ class FirestoreService {
     });
   }
 }
-
-

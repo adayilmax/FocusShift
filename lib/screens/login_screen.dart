@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-/// Color & style constants (you can also move these to a shared file)
+/// Color & style constants
 const Color _kAccentGreen = Color(0xFF00FFD1);
 const Color _kFieldBorder = Colors.black;
 const double _kCardRadius = 24.0;
@@ -28,6 +29,7 @@ const TextStyle _kLinkBoldStyle = TextStyle(
 
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
+  const LoginScreen({Key? key}) : super(key: key);
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -36,25 +38,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  bool _loading = false;
 
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: your login logic…
-      Navigator.pushReplacementNamed(context, '/dashboard');
-    } else {
-      showDialog(
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      // invalid inputs
+      return showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: Text("Invalid Form"),
-          content: Text("Please fix the errors in red before submitting."),
+          title: const Text("Invalid Form"),
+          content: const Text("Please fix the errors before submitting."),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("OK"),
-            )
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))
           ],
         ),
       );
+    }
+
+    setState(() => _loading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _email.text.trim(),
+        password: _password.text,
+      );
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Login failed")),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("An unexpected error occurred.")),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -63,10 +80,10 @@ class _LoginScreenState extends State<LoginScreen> {
       labelText: label,
       prefixIcon: Icon(icon, color: _kFieldBorder),
       border: OutlineInputBorder(
-        borderSide: BorderSide(color: _kFieldBorder),
+        borderSide: const BorderSide(color: _kFieldBorder),
         borderRadius: BorderRadius.circular(8),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
     );
   }
 
@@ -93,19 +110,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("FocusShift", style: _kLogoStyle),
+                    const Text("FocusShift", style: _kLogoStyle),
                     InkWell(
                       onTap: () => Navigator.pop(context),
-                      child: Icon(Icons.close,
-                          color: _kAccentGreen, size: 28),
+                      child: const Icon(Icons.close, color: _kAccentGreen, size: 28),
                     ),
                   ],
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
 
                 // Title
-                Text("Login", style: _kTitleStyle),
-                SizedBox(height: 32),
+                const Text("Login", style: _kTitleStyle),
+                const SizedBox(height: 32),
 
                 // Form
                 Form(
@@ -116,29 +132,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: _kFieldHeight,
                         child: TextFormField(
                           controller: _email,
-                          decoration:
-                              _decoration("Email", Icons.mail_outline),
+                          decoration: _decoration("Email", Icons.mail_outline),
                           validator: (v) =>
-                              v != null && v.contains("@")
-                                  ? null
-                                  : "Invalid email.",
+                          v != null && v.contains("@") ? null : "Invalid email.",
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       SizedBox(
                         height: _kFieldHeight,
                         child: TextFormField(
                           controller: _password,
-                          decoration:
-                              _decoration("Password", Icons.lock_outline),
+                          decoration: _decoration("Password", Icons.lock_outline),
                           obscureText: true,
                           validator: (v) =>
-                              v != null && v.length >= 6
-                                  ? null
-                                  : "Minimum 6 characters.",
+                          v != null && v.length >= 6 ? null : "Minimum 6 characters.",
                         ),
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       SizedBox(
                         height: _kFieldHeight,
                         child: ElevatedButton(
@@ -148,35 +158,34 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          onPressed: _submit,
-                          child: Icon(Icons.arrow_forward,
-                              color: Colors.black),
+                          onPressed: _loading ? null : _submit,
+                          child: _loading
+                              ? const CircularProgressIndicator(color: Colors.black)
+                              : const Icon(Icons.arrow_forward, color: Colors.black),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      // TODO: forgot password
+                      // TODO: implement password reset flow
                     },
-                    child: Text("Forgot Password?", style: _kLinkStyle),
+                    child: const Text("Forgot Password?", style: _kLinkStyle),
                   ),
                 ),
                 Center(
                   child: GestureDetector(
-                    onTap: () => Navigator
-                        .pushReplacementNamed(context, '/signup'),
+                    onTap: () => Navigator.pushReplacementNamed(context, '/signup'),
                     child: RichText(
                       text: TextSpan(
-                        text: "Don’t have account? ",
+                        text: "Don’t have an account? ",
                         style: _kLinkStyle,
                         children: [
-                          TextSpan(
-                              text: "Sign Up", style: _kLinkBoldStyle)
+                          TextSpan(text: "Sign Up", style: _kLinkBoldStyle),
                         ],
                       ),
                     ),
