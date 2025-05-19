@@ -96,8 +96,8 @@ class _MyAppState extends State<MyApp> {
         '/applock': (context) => const AppLockScreen(),
         '/focus': (context) => const FocusScreen(),
         '/schedule': (context) => const ScheduleScreen(),
-        '/todays_tasks': (context) => const TodaysTaskScreen(),
-        '/daily_summary': (context) => const DailySummaryScreen(),
+        '/todays_tasks': (context) => TodaysTaskScreen(),
+        '/daily_summary': (context) =>  const DailySummaryScreen(),
         '/data_analytics': (context) => const DataAnalytics(),
       },
     );

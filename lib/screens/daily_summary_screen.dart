@@ -1,176 +1,108 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-import '../state/auth_providers.dart';
-import '../state/firestore_providers.dart';
-import 'login_screen.dart';
-import '../widgets/task_item.dart';
-
-const Color _kPrimaryColor = Colors.greenAccent;
-
-class DailySummaryScreen extends ConsumerWidget {
+class DailySummaryScreen extends StatefulWidget {
   const DailySummaryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
-    return authState.when(
-      data: (user) {
-        if (user == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacementNamed(
-                context, LoginScreen.routeName);
-          });
-          return const Scaffold();
-        }
-        return _buildBody(context, ref, user.uid);
-      },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        body: Center(child: Text('Auth error: $e')),
-      ),
-    );
+  State<DailySummaryScreen> createState() => _DailySummaryScreenState();
+}
+
+class _DailySummaryScreenState extends State<DailySummaryScreen> {
+  final TextEditingController _noteController = TextEditingController();
+
+  String get todayStr {
+    final today = DateTime.now();
+    return "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
   }
 
-  Widget _buildBody(
-      BuildContext context, WidgetRef ref, String uid) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final generalTextColor = isDark ? Colors.white : Colors.black;
-    final theme = Theme.of(context);
+  Future<DocumentSnapshot> getSummary(String userId) {
+    return FirebaseFirestore.instance
+        .collection('daily_summaries')
+        .doc("$userId-$todayStr")
+        .get();
+  }
 
-    final summaryAsync = ref.watch(dailySummaryProvider(uid));
-    final tasksAsync = ref.watch(completedTasksProvider(uid));
+  Future<void> saveSummary(String userId, int completed, int total, String note) async {
+    await FirebaseFirestore.instance
+        .collection('daily_summaries')
+        .doc("$userId-$todayStr")
+        .set({
+      'userId': userId,
+      'date': todayStr,
+      'completedTasks': completed,
+      'totalTasks': total,
+      'note': note,
+    });
+  }
 
+  Future<Map<String, int>> getTaskStats(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('tasks')
+        .where('userId', isEqualTo: userId)
+        .where('date', isEqualTo: todayStr)
+        .get();
+    final total = snapshot.docs.length;
+    final completed = snapshot.docs.where((doc) => doc['completed'] == true).length;
+    return {'total': total, 'completed': completed};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Center(child: Text("Giriş yapmadınız"));
+    }
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: generalTextColor),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text("Daily Summary",
-            style: TextStyle(color: generalTextColor)),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              backgroundColor: Colors.grey.shade300,
-              child: Icon(Icons.person, color: Colors.grey.shade800),
-            ),
-          ),
-        ],
-      ),
-      body: summaryAsync.when(
-        data: (summary) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text('Summary for Today',
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(
-                    color: generalTextColor,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-
-            // Focus Time Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(Icons.timer_outlined,
-                        color: theme.colorScheme.primary, size: 30),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Text('Total Focus Time',
-                            style: theme.textTheme.titleMedium
-                                ?.copyWith(
-                                color: generalTextColor)),
-                        const SizedBox(height: 4),
-                        Text('${summary.focusTime}',
-                            style: theme.textTheme.headlineSmall
-                                ?.copyWith(
-                                color: generalTextColor,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    )
-                  ],
+      appBar: AppBar(title: const Text("Günlük Özet")),
+      body: FutureBuilder(
+        future: Future.wait([
+          getSummary(user.uid),
+          getTaskStats(user.uid),
+        ]),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text("Bir hata oluştu: ${snapshot.error}"));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final DocumentSnapshot summaryDoc = snapshot.data![0] as DocumentSnapshot;
+          final taskStats = snapshot.data![1] as Map<String, int>;
+          final alreadySaved = summaryDoc.exists;
+          final note = alreadySaved ? summaryDoc['note'] as String : '';
+          _noteController.text = note;
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Text("Tamamlanan: ${taskStats['completed']} / ${taskStats['total']}"),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _noteController,
+                  decoration: const InputDecoration(labelText: "Bugünkü notunuz"),
+                  maxLines: 3,
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Tasks Completed Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle_outline,
-                        color: Colors.green, size: 30),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Text('Tasks Completed',
-                            style: theme.textTheme.titleMedium
-                                ?.copyWith(
-                                color: generalTextColor)),
-                        const SizedBox(height: 4),
-                        Text('${summary.tasksCompleted}',
-                            style: theme.textTheme.headlineSmall
-                                ?.copyWith(
-                                color: generalTextColor,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    )
-                  ],
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: alreadySaved
+                      ? null
+                      : () async {
+                    await saveSummary(
+                      user.uid,
+                      taskStats['completed']!,
+                      taskStats['total']!,
+                      _noteController.text.trim(),
+                    );
+                    setState(() {}); // ekranı yenile
+                  },
+                  child: Text(alreadySaved ? "Özet Kaydedildi" : "Kaydet"),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 24),
-
-            Text('Completed Tasks',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(
-                    color: generalTextColor,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-
-            // Task List from Firestore
-            tasksAsync.when(
-              data: (tasks) => Column(
-                children: tasks
-                    .map((t) => TaskItem(
-                  time: t.time,
-                  label: t.label,
-                  profileCount: t.profileCount,
-                  primaryColor: _kPrimaryColor,
-                ))
-                    .toList(),
-              ),
-              loading: () =>
-              const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Error: $e',
-                  style: TextStyle(color: generalTextColor)),
-            ),
-          ],
-        ),
-        loading: () =>
-        const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+          );
+        },
       ),
     );
   }
