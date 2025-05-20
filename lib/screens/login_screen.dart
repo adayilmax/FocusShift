@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // en üste ekle
+import 'package:provider/provider.dart'; // Üste ekle
+import '../providers/auth_provider.dart' as myauth; // auth_provider import et
 
 
 /// Color & style constants (you can also move these to a shared file)
@@ -43,13 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _submit() async {
     if (_formKey.currentState!.validate()) {
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _email.text.trim(),
-          password: _password.text.trim(),
-        );
+        await Provider.of<myauth.AuthProvider>(context, listen: false)
+            .signIn(_email.text.trim(), _password.text.trim());
 
-        // Başarılıysa dashboard'a git
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        // Başarılıysa yönlendirme zaten AuthGate tarafından yapılacak.
+        // Burada ek yönlendirme yapmana gerek yok.
       } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Login failed')),

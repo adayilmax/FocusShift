@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../main.dart'; // Assuming AppColors, AppTextStyles, AppDimens are defined here or globally
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart' as myauth;
 
 // Mock definitions if not available from main.dart for demonstration
 class AppColors {
@@ -123,15 +126,14 @@ class MainDashboardScreen extends StatelessWidget {
 
               // --- LOG OUT BUTTON ---
               Divider(color: drawerItemColor.withOpacity(0.5)), // Optional divider using the adaptive color
+
               ListTile(
-                leading: Icon(Icons.logout, color: drawerItemColor), // Logout icon using adaptive color
-                title: Text('Log Out', style: TextStyle(color: drawerItemColor)), // Logout text using adaptive color
-                onTap: () {
-                  // Close the drawer first
-                  Navigator.pop(context);
-                  // Navigate to root ('/') and remove all routes behind it
-                  Navigator.pushNamedAndRemoveUntil(context, '/', (Route<dynamic> route) => false);
-                  // Add any actual logout logic here (e.g., clearing tokens, user state)
+                leading: Icon(Icons.logout, color: drawerItemColor),
+                title: Text('Log Out', style: TextStyle(color: drawerItemColor)),
+                onTap: () async {
+                  Navigator.pop(context); // Drawer'ı kapat
+                  await Provider.of<myauth.AuthProvider>(context, listen: false).signOut();
+                  // Yönlendirme gerekmez; AuthGate otomatik olarak login ekranına geçer
                 },
               ),
               // --- LOG OUT BUTTON END ---

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // en üste ekle
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart' as myauth;
 
 
 /// Color & style constants (same as login—consider moving to a shared file)
@@ -44,13 +46,13 @@ class _SignupScreenState extends State<SignupScreen> {
   void _submit() async {
     if (_formKey.currentState!.validate() && _dob != null) {
       try {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _email.text.trim(),
-          password: _password.text.trim(),
-        );
+        final success = await Provider.of<myauth.AuthProvider>(context, listen: false)
+            .signUp(_email.text.trim(), _password.text.trim());
 
-        // Başarılı ise login sayfasına yönlendir
-        Navigator.pushReplacementNamed(context, '/login');
+        if (success) {
+          // Kayıt başarılıysa login sayfasına yönlendir
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Signup failed')),
@@ -62,6 +64,7 @@ class _SignupScreenState extends State<SignupScreen> {
       );
     }
   }
+
 
   Future<void> _pickDate() async {
     final today = DateTime.now();
