@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-
+// Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 // Screens
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
@@ -14,9 +16,15 @@ import 'screens/todays_task_screen.dart'; // contains TodaysTasksScreen
 import 'screens/daily_summary_screen.dart';
 import 'screens/data_analytics.dart'; // contains DataAnalytics
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final app = await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  print('🔥 Firebase initialized: ${app.name}');
   runApp(MyApp());
 }
+
 
 /// AppColors, TextStyles, Dimensions
 class AppColors {
@@ -81,7 +89,7 @@ class _MyAppState extends State<MyApp> {
             (context) => ProfileScreen(onThemeChanged: _handleThemeChange),
         '/settings':
             (context) => SettingsScreen(onThemeChanged: _handleThemeChange),
-        '/applock': (context) => AppLockScreen(), // ✅ App Lock added
+        '/applock': (context) => AppLockScreen(),
         '/focus': (context) => FocusScreen(),
         '/schedule': (context) => ScheduleScreen(),
         '/todays_tasks': (context) => TodaysTaskScreen(),

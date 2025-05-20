@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // en üste ekle
+
 
 /// Color & style constants (you can also move these to a shared file)
 const Color _kAccentGreen = Color(0xFF00FFD1);
@@ -37,10 +39,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
 
-  void _submit() {
+
+  void _submit() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: your login logic…
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      try {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _email.text.trim(),
+          password: _password.text.trim(),
+        );
+
+        // Başarılıysa dashboard'a git
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } on FirebaseAuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Login failed')),
+        );
+      }
     } else {
       showDialog(
         context: context,
@@ -57,6 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
+
 
   InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(

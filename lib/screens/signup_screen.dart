@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // en üste ekle
+
 
 /// Color & style constants (same as login—consider moving to a shared file)
 const Color _kAccentGreen = Color(0xFF00FFD1);
@@ -39,10 +41,21 @@ class _SignupScreenState extends State<SignupScreen> {
   final _password = TextEditingController();
   DateTime? _dob;
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState!.validate() && _dob != null) {
-      // Simulate sign-up success then redirect to login
-      Navigator.pushReplacementNamed(context, '/login');
+      try {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _email.text.trim(),
+          password: _password.text.trim(),
+        );
+
+        // Başarılı ise login sayfasına yönlendir
+        Navigator.pushReplacementNamed(context, '/login');
+      } on FirebaseAuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Signup failed')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please fill all fields and select your birth date.')),
