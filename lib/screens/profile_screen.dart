@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileScreen extends StatefulWidget {
   final void Function(bool) onThemeChanged;
@@ -11,6 +13,37 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool isDarkMode = false;
+  bool _loading = true;
+  String? _name;
+  String? _email;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        setState(() {
+          _name = data['name'];
+          _email = data['email'];
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (e) {
+      print("❌ Error loading user data: $e");
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,60 +66,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: ListView(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           const SizedBox(height: 10),
           Center(
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              children: const [
-                CircleAvatar(
-                  radius: 45,
-                  backgroundImage:
-                  NetworkImage("https://i.pravatar.cc/150?img=3"),
-                ),
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Colors.black,
-                  child: Icon(Icons.edit, size: 14, color: Colors.white),
-                ),
-              ],
+            child: CircleAvatar(
+              radius: 45,
+              backgroundImage: const AssetImage('assets/mock_images/default-avatar.png'),
             ),
           ),
           const SizedBox(height: 12),
-          const Center(
+          Center(
             child: Text(
-              "Jonathan Patterson",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              _name ?? 'Name not found',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
-          const Center(
-            child: Text("hello@reallygreatsite.com"),
+          Center(
+            child: Text(
+              _email ?? 'Email not found',
+            ),
           ),
           const SizedBox(height: 24),
-
-          // ✅ Tıklanabilir General Settings başlığı
           sectionTitle(
             "General Settings",
             onTap: () {
               Navigator.pushNamed(context, '/settings');
             },
           ),
-
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.cloud_sync, color: Colors.black),
+              child: const Icon(Icons.cloud_sync, color: Colors.black),
             ),
             title: const Text("Sync Preferences"),
             trailing: const Icon(Icons.arrow_forward_ios),
           ),
-
           SwitchListTile(
             secondary: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.settings, color: Colors.black),
+              child: const Icon(Icons.settings, color: Colors.black),
             ),
             title: const Text("Mode"),
             subtitle: const Text("Dark & Light"),
@@ -96,11 +118,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               widget.onThemeChanged(val);
             },
           ),
-
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.key, color: Colors.black),
+              child: const Icon(Icons.key, color: Colors.black),
             ),
             title: const Text("Change Password"),
             trailing: const Icon(Icons.arrow_forward_ios),
@@ -108,20 +129,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.language, color: Colors.black),
+              child: const Icon(Icons.language, color: Colors.black),
             ),
             title: const Text("Language"),
             trailing: const Icon(Icons.arrow_forward_ios),
           ),
-
           const SizedBox(height: 16),
-          // ⬇️ Normal statik başlık (tıkanabilir değil)
           sectionTitle("Information"),
-
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.phone_android, color: Colors.black),
+              child: const Icon(Icons.phone_android, color: Colors.black),
             ),
             title: const Text("Notifications"),
             trailing: const Icon(Icons.arrow_forward_ios),
@@ -129,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.description, color: Colors.black),
+              child: const Icon(Icons.description, color: Colors.black),
             ),
             title: const Text("Terms & Conditions"),
             trailing: const Icon(Icons.arrow_forward_ios),
@@ -137,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.shield, color: Colors.black),
+              child: const Icon(Icons.shield, color: Colors.black),
             ),
             title: const Text("Privacy Policy and Safety"),
             trailing: const Icon(Icons.arrow_forward_ios),
@@ -145,7 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: Icon(Icons.person, color: Colors.black),
+              child: const Icon(Icons.person, color: Colors.black),
             ),
             title: const Text("Edit Profile"),
             trailing: const Icon(Icons.arrow_forward_ios),
@@ -155,7 +173,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ✅ Güncellenmiş: Tıklanabilir başlık fonksiyonu
   Widget sectionTitle(String text, {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -21,9 +22,22 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Kayıt olma
-  Future<bool> signUp(String email, String password) async {
+  Future<bool> signUp(String name, String email, String password) async {
     try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      final result = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final uid = result.user!.uid;
+
+      // Save to Firestore immediately
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'name': name,
+        'email': email,
+        'photoUrl': null,
+      });
+
       return true;
     } on FirebaseAuthException catch (_) {
       rethrow;

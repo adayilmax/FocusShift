@@ -47,11 +47,10 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_formKey.currentState!.validate() && _dob != null) {
       try {
         final success = await Provider.of<myauth.AuthProvider>(context, listen: false)
-            .signUp(_email.text.trim(), _password.text.trim());
-
+            .signUp(_name.text.trim(), _email.text.trim(), _password.text.trim());
         if (success) {
           // Kayıt başarılıysa login sayfasına yönlendir
-          Navigator.pushReplacementNamed(context, '/login');
+          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
         }
       } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
